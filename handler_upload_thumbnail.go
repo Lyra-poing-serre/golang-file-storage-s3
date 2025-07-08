@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/bootdotdev/learn-file-storage-s3-golang-starter/internal/auth"
 	"github.com/google/uuid"
@@ -53,7 +52,13 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 		respondWithError(w, http.StatusUnauthorized, "User isn't the video owner", err)
 		return
 	}
-	fileSuffix := "." + strings.Split(header.Header.Get("Content-Type"), "/")[1]
+	_, cSuffix, _, err := getContentType(header.Header.Get("Content-Type"))
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid content", err)
+		return
+	}
+
+	fileSuffix := "." + cSuffix
 	tnFp := filepath.Join(cfg.assetsRoot, videoID.String()+fileSuffix)
 	file, err := os.Create(tnFp)
 	if err != nil {
@@ -69,7 +74,7 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 	fmt.Println("New thumbnail created at ", tnFp)
 
 	tnUrl := fmt.Sprintf("http://localhost:%s/%s", cfg.port, tnFp)
-	fmt.Println(tnFp)
+	fmt.Println(tnFp) // todo RM
 	video.ThumbnailURL = &tnUrl
 	err = cfg.db.UpdateVideo(video)
 	if err != nil {
