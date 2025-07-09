@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"net/http"
@@ -59,7 +61,9 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 	}
 
 	fileSuffix := "." + cSuffix
-	tnFp := filepath.Join(cfg.assetsRoot, videoID.String()+fileSuffix)
+	bufName := make([]byte, 32)
+	rand.Read(bufName)
+	tnFp := filepath.Join(cfg.assetsRoot, base64.RawURLEncoding.EncodeToString(bufName)+fileSuffix)
 	file, err := os.Create(tnFp)
 	if err != nil {
 		fmt.Println(err)
