@@ -66,7 +66,6 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 	tnFp := filepath.Join(cfg.assetsRoot, base64.RawURLEncoding.EncodeToString(bufName)+fileSuffix)
 	file, err := os.Create(tnFp)
 	if err != nil {
-		fmt.Println(err)
 		respondWithError(w, http.StatusInternalServerError, "Can't create local file", err)
 		return
 	}
@@ -78,7 +77,7 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 	fmt.Println("New thumbnail created at ", tnFp)
 
 	tnUrl := fmt.Sprintf("http://localhost:%s/%s", cfg.port, tnFp)
-	fmt.Println(tnFp) // todo RM
+
 	video.ThumbnailURL = &tnUrl
 	err = cfg.db.UpdateVideo(video)
 	if err != nil {

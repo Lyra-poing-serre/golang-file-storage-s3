@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -27,12 +28,10 @@ type apiConfig struct {
 	port             string
 }
 
-// type thumbnail struct {
-// 	data      []byte
-// 	mediaType string
-// }
-
-//var videoThumbnails = map[uuid.UUID]thumbnail{}
+func (cfg *apiConfig) getS3Url(key string) *string {
+	url := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", cfg.s3Bucket, cfg.s3Region, key)
+	return &url
+}
 
 func main() {
 	godotenv.Load(".env")

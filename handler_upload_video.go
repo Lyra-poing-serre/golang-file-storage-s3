@@ -53,19 +53,17 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 	}
 	defer file.Close()
 	contentType := header.Header.Get("Content-Type")
-	_, vSuffix, _, err := getContentType(contentType)
+	_, _, _, err = getContentType(contentType)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, err.Error(), err)
 		return
 	}
-
-	tmpFile, err := os.CreateTemp("", vId.String()+"*"+vSuffix)
+	tmpFile, err := os.CreateTemp("", vId.String()+"*"+".mp4")
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error(), err)
 		return
 	}
 	defer os.Remove(tmpFile.Name())
-	defer tmpFile.Close()
 
 	_, err = io.Copy(tmpFile, file)
 	if err != nil {
@@ -78,15 +76,39 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	processedFile, err := processVideoForFastStart(tmpFile.Name())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error(), err)
+		return
+	}
+	tmpFile.Close()
+	os.Remove(tmpFile.Name())
+	tmpFile, err = os.Open(processedFile)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error(), err)
+		return
+	}
+	defer tmpFile.Close()
+	defer os.Remove(tmpFile.Name())
+
+	ratio, err := getVideoAspectRatio(tmpFile.Name())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error(), err)
+		return
+	}
+
 	b := make([]byte, 32)
 	rand.Read(b)
-	fileName := base64.RawURLEncoding.EncodeToString(b) + "." + vSuffix
-	// fileStats, err := tmpFile.Stat()
-	// if err != nil {
-	// 	respondWithError(w, http.StatusInternalServerError, err.Error(), err)
-	// 	return
-	// }
-	//fileLen := fileStats.Size()
+
+	fileName := base64.RawURLEncoding.EncodeToString(b) + ".mp4"
+	switch ratio {
+	case "16:9":
+		fileName = "landscape" + "/" + fileName
+	case "9:16":
+		fileName = "portrait" + "/" + fileName
+	default:
+		fileName = ratio + "/" + fileName
+	}
 	_, err = cfg.s3Client.PutObject(
 		context.Background(),
 		&s3.PutObjectInput{
@@ -94,7 +116,6 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 			Key:         &fileName,
 			Body:        tmpFile,
 			ContentType: &contentType,
-			//ContentLength: &fileLen,
 		},
 	)
 	if err != nil {
@@ -108,9 +129,4 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	fmt.Printf("New video %s uploaded !\n", fileName)
-}
-
-func (cfg *apiConfig) getS3Url(key string) *string {
-	url := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", cfg.s3Bucket, cfg.s3Region, key)
-	return &url
 }
