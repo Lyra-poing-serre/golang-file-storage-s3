@@ -18,7 +18,13 @@ func getContentType(mediaType string) (string, string, map[string]string, error)
 		} else {
 			return "", "", map[string]string{}, errors.New("allow only jpeg or png images")
 		}
+	case "video":
+		if contentType[1] == "mp4" {
+			return contentType[0], contentType[1], params, nil
+		} else {
+			return "", "", map[string]string{}, errors.New("allow onlymp4 videos")
+		}
 	default:
-		return "", "", map[string]string{}, errors.New("allow only images")
+		return "", "", map[string]string{}, errors.New("allow only images or videos")
 	}
 }
