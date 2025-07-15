@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -26,11 +25,6 @@ type apiConfig struct {
 	s3Region         string
 	s3CfDistribution string
 	port             string
-}
-
-func (cfg *apiConfig) getS3Url(key string) *string {
-	url := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", cfg.s3Bucket, cfg.s3Region, key)
-	return &url
 }
 
 func main() {
