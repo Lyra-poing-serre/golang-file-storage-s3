@@ -103,11 +103,11 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 	fileName := base64.RawURLEncoding.EncodeToString(b) + ".mp4"
 	switch ratio {
 	case "16:9":
-		fileName = "landscape" + "/" + fileName
+		fileName = fmt.Sprintf("landscape/%s", fileName)
 	case "9:16":
-		fileName = "portrait" + "/" + fileName
+		fileName = fmt.Sprintf("portrait/%s", fileName)
 	default:
-		fileName = ratio + "/" + fileName
+		fileName = fmt.Sprintf("other/%s", fileName)
 	}
 	_, err = cfg.s3Client.PutObject(
 		context.Background(),
@@ -122,7 +122,8 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 		respondWithError(w, http.StatusBadGateway, err.Error(), err)
 		return
 	}
-	url := fmt.Sprintf("%s,%s", cfg.s3Bucket, fileName)
+
+	url := fmt.Sprintf("%s/%s", cfg.s3CfDistribution, fileName)
 	dbVideo.VideoURL = &url
 	err = cfg.db.UpdateVideo(dbVideo)
 	if err != nil {
@@ -130,11 +131,5 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	signedVideo, err := cfg.dbVideoToSignedVideo(dbVideo)
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, err.Error(), err)
-		return
-	}
-	fmt.Printf("New video %s uploaded !\n", *signedVideo.VideoURL)
-
+	fmt.Printf("New video %s uploaded !\n", *dbVideo.VideoURL)
 }
