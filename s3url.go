@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -26,11 +27,19 @@ func generatePresignedURL(s3Client *s3.Client, bucket, key string, expireTime ti
 }
 
 func (cfg *apiConfig) dbVideoToSignedVideo(video database.Video) (database.Video, error) {
-	url := strings.Split(*video.VideoURL, ",")
+	if video.VideoURL == nil {
+		return video, nil
+	}
+
+	url := strings.SplitN(*video.VideoURL, ",", 2)
+	if len(url) != 2 {
+		return video, fmt.Errorf("malformed video url: %s", *video.VideoURL)
+	}
 	bucket, key := url[0], url[1]
 	presignUrl, err := generatePresignedURL(cfg.s3Client, bucket, key, 2*time.Minute)
-	if err == nil {
-		video.VideoURL = &presignUrl
+	if err != nil {
+		return database.Video{}, err
 	}
-	return video, err
+	video.VideoURL = &presignUrl
+	return video, nil
 }

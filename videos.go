@@ -58,12 +58,11 @@ func processVideoForFastStart(filePath string) (string, error) {
 		filepath.Dir(filePath),
 		fmt.Sprintf("%s.processing%s", name[:len(name)-len(suffix)], suffix),
 	)
-	fmt.Println(filePath, outFile)
+
 	cmdArgs := []string{
 		"-i", filePath, "-c", "copy", "-movflags", "faststart", "-f", "mp4", outFile,
 	}
 	cmd := exec.Command(cmdName, cmdArgs...)
-	fmt.Println(cmd.String())
 	err := cmd.Run()
 	if err != nil {
 		return "", err

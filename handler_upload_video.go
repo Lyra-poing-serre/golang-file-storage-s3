@@ -122,19 +122,19 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 		respondWithError(w, http.StatusBadGateway, err.Error(), err)
 		return
 	}
-	url := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", cfg.s3Bucket, cfg.s3Region, fileName)
-	//url := fmt.Sprintf("%s,%s", cfg.s3Bucket, fileName)
+	url := fmt.Sprintf("%s,%s", cfg.s3Bucket, fileName)
 	dbVideo.VideoURL = &url
-	// signedVideo, err := cfg.dbVideoToSignedVideo(dbVideo)
-	// if err != nil {
-	// 	respondWithError(w, http.StatusInternalServerError, err.Error(), err)
-	// 	return
-	// }
-	// err = cfg.db.UpdateVideo(signedVideo)
 	err = cfg.db.UpdateVideo(dbVideo)
 	if err != nil {
 		respondWithError(w, http.StatusBadGateway, err.Error(), err)
 		return
 	}
-	fmt.Printf("New video %s uploaded !\n", fileName)
+
+	signedVideo, err := cfg.dbVideoToSignedVideo(dbVideo)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error(), err)
+		return
+	}
+	fmt.Printf("New video %s uploaded !\n", *signedVideo.VideoURL)
+
 }
